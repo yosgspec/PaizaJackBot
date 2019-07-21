@@ -3,17 +3,25 @@ class Player:
 		self.cards=list(map(int,cardStr.split(" ")))
 		self.isBet=self.cards[0]==0
 		if self.isBet: return
-		self.__cardsAce=[11 if v==1 else v for v in self.cards]
+		self.__aceCount=sum(1 for v in self.cards if v==10)
+
+	def hitCard(self):
+		return self.cards.pop(0)
+
+	def addCard(self,card):
+		self.cards.append(card)
+		if card==1: self.__aceCount+=1
 
 	@property
 	def total(self):
-		cardsAceTotal=sum(self.__cardsAce)
-		return (
-			cardsAceTotal if cardsAceTotal<=21 else
-			sum(self.cards))
+		cardsSum=sum(self.cards)
+		for i in range(self.__aceCount,0,-1):
+			aceTotal=cardsSum+10*i
+			if aceTotal<=21: return aceTotal
+		return cardsSum
 
-betList=[0,50,100,200,400,800]
-level=5
+betList=[0,50,100,200,400,800,2000]
+level=6
 test=False
 
 def main():
@@ -32,8 +40,13 @@ def main():
 	else:
 		maxBet=int(input());
 		cpu=Player(input());
-		isHit=(pl.total<=cpu.total and cpu.total<=22 
-		    or pl.total<17 and cpu.total<17)
+		if level<6:
+			isHit=(pl.total<=cpu.total and cpu.total<=22 
+			    or pl.total<17 and cpu.total<17)
+		else:
+			deck=Player(input())
+			if cpu.total<17: cpu.addCard(deck.hitCard())
+			isHit=pl.total+deck.cards[0]<=21
 
 	print("HIT" if isHit else "STAND")
 
