@@ -5,7 +5,6 @@ using System.Linq;
 class Player{
 	public List<int> cards;
 	public bool isBet;
-	public List<int> cardsAce;
 	int aceCount;
 
 	public Player(string cardStr){
@@ -37,39 +36,57 @@ class Player{
 }
 
 class Program{
-	static readonly int[] betList={0,50,100,200,400,800,2000};
-	const int level=6;
+	static readonly int[] betList={0,50,100,200,400,800,2000,2000,10000};
+	const int level=8;
 	const bool test=false;
+	const int maxCombo=0;
 
 	static void Main(){
 		var bet=test? 1: betList[level];
 		var pl=new Player(Console.ReadLine());
-		if(pl.isBet){
-			Console.WriteLine(bet);
-			return;
-		}
-
 		int turn,combo;
 		if(2<=level){
 			turn=int.Parse(Console.ReadLine());
 			combo=int.Parse(Console.ReadLine());
 		}
 
-		bool isHit;
+		if(pl.isBet){
+			if(8<=level){
+				var lastPrize=int.Parse(Console.ReadLine());
+				if(0<combo && combo<maxCombo) bet=lastPrize;
+			}
+			Console.WriteLine(bet);
+			return;
+		}
+
+		bool isHit=false;
 		if(level<3){
 			isHit=pl.total<14;
 		}
 		else{
 			var maxBet=int.Parse(Console.ReadLine());
 			var cpu=new Player(Console.ReadLine());
+			var basicHit=
+				pl.total<=cpu.total && cpu.total<=21
+				|| pl.total<17 && cpu.total<17;
+
 			if(level<6){
-				isHit=pl.total<=cpu.total && cpu.total<=21
-				   || pl.total<17 && cpu.total<17;
+				isHit=basicHit;
 			}
 			else{
-				var deck=new Player(Console.ReadLine());
-				if(cpu.total<17) cpu.addCard(deck.hitCard());
-				isHit=pl.total+deck.cards[0]<=21;
+				try{
+					var deck=new Player(Console.ReadLine());
+					if(cpu.total<17) cpu.addCard(deck.hitCard());
+					isHit=
+						cpu.total<17 && 21<cpu.total+deck.cards[0]?
+							false:
+						0<deck.cards.Count?
+							pl.total+deck.cards[0]<=21:
+							basicHit;
+				}
+				catch{
+					isHit=basicHit;
+				}
 			}
 		}
 

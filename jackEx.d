@@ -8,7 +8,6 @@ import std.algorithm.iteration;
 class Player{
 	int[] cards;
 	bool isBet;
-	int[] cardsAce;
 	private int aceCount;
 
 	this(string cardStr){
@@ -39,40 +38,59 @@ class Player{
 	}
 }
 
-immutable betList=[0,50,100,200,400,800,2000];
-immutable level=6;
+immutable betList=[0,50,100,200,400,800,2000,2000,10000];
+immutable level=8;
 immutable test=false;
+immutable maxCombo=0;
 
 void main(){
 	auto bet=test? 1: betList[level];
 	auto pl=new Player(readln.strip);
-	if(pl.isBet){
-		writeln(bet);
-		return;
-	}
-
 	int turn,combo;
 	if(2<=level){
 		turn=readln.strip.to!int;
 		combo=readln.strip.to!int;
 	}
 
-	int isHit;
+	if(pl.isBet){
+		if(8<=level){
+			auto lastPrize=readln.strip.to!int;
+			if(0<combo && combo<maxCombo) bet=lastPrize;
+		}
+		writeln(bet);
+		return;
+	}
+
+	bool isHit=false;
 	if(level<3){
 		isHit=pl.total<14;
 	}
 	else{
 		auto maxBet=readln.strip.to!int;
 		auto cpu=new Player(readln.strip);
+		auto basicHit=
+			pl.total<=cpu.total && cpu.total<=21
+			|| pl.total<17 && cpu.total<17;
+
 		if(level<6){
-			isHit=pl.total<=cpu.total && cpu.total<=21
-			   || pl.total<17 && cpu.total<17;
+			isHit=basicHit;
 		}
 		else{
-			auto deck=new Player(readln.strip);
-			if(cpu.total<17) cpu.addCard(deck.hitCard());
-			isHit=pl.total+deck.cards[0]<=21;
-
+			auto deckStr=readln.strip;
+			if(deckStr!=""){
+				auto deck=new Player(deckStr);
+				if(cpu.total<17) cpu.addCard(deck.hitCard());
+				isHit=
+					cpu.total<17 && 21<cpu.total+deck.cards[0]?
+						false:
+					0<deck.cards.length?
+						pl.total+deck.cards[0]<=21:
+						basicHit;
+			}
+			else{
+				isHit=pl.total<=cpu.total && cpu.total<=21
+				   || pl.total<17 && cpu.total<17;
+			}
 		}
 	}
 
