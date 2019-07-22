@@ -34,7 +34,7 @@ return class Player{
 const betList=[0,50,100,200,400,800,2000,2000,10000];
 const level=8;
 const test=false;
-const maxCombo=0;
+const maxCombo=5;
 
 const main=function*(res){
 	var bet=test? 1: betList[level];
@@ -56,7 +56,7 @@ const main=function*(res){
 
 	var isHit=false;
 	if(level<3){
-		isHit=pl.total<14;
+		isHit=pl.total<17;
 	}
 	else{
 		let maxBet=parseInt(yield rl.once("line",res));
@@ -82,6 +82,9 @@ const main=function*(res){
 				let deck=new Player(deckStr);
 				if(cpu.total<17) cpu.addCard(deck.hitCard());
 				isHit=
+					cpu.total==21 && 4<=deck.cards.length
+					&& new Player(`${deck.cards[0]} ${deck.cards[2]}`).total==21?
+						true:
 					cpu.total<17 && 21<cpu.total+deck.cards[0]?
 						false:
 					0<deck.cards.length?

@@ -1,6 +1,7 @@
 import std.stdio;
 import std.conv;
 import std.string;
+import std.format;
 import std.array;
 import std.algorithm;
 import std.algorithm.iteration;
@@ -41,7 +42,7 @@ class Player{
 immutable betList=[0,50,100,200,400,800,2000,2000,10000];
 immutable level=8;
 immutable test=false;
-immutable maxCombo=0;
+immutable maxCombo=5;
 
 void main(){
 	auto bet=test? 1: betList[level];
@@ -63,7 +64,7 @@ void main(){
 
 	bool isHit=false;
 	if(level<3){
-		isHit=pl.total<14;
+		isHit=pl.total<17;
 	}
 	else{
 		auto maxBet=readln.strip.to!int;
@@ -81,6 +82,9 @@ void main(){
 				auto deck=new Player(deckStr);
 				if(cpu.total<17) cpu.addCard(deck.hitCard());
 				isHit=
+					cpu.total==21 && 4<=deck.cards.length
+					&& new Player(format!"%s %s"(deck.cards[0],deck.cards[2])).total==21?
+						true:
 					cpu.total<17 && 21<cpu.total+deck.cards[0]?
 						false:
 					0<deck.cards.length?

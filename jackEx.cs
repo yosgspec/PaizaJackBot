@@ -39,7 +39,7 @@ class Program{
 	static readonly int[] betList={0,50,100,200,400,800,2000,2000,10000};
 	const int level=8;
 	const bool test=false;
-	const int maxCombo=0;
+	const int maxCombo=5;
 
 	static void Main(){
 		var bet=test? 1: betList[level];
@@ -61,7 +61,7 @@ class Program{
 
 		bool isHit=false;
 		if(level<3){
-			isHit=pl.total<14;
+			isHit=pl.total<17;
 		}
 		else{
 			var maxBet=int.Parse(Console.ReadLine());
@@ -78,6 +78,9 @@ class Program{
 					var deck=new Player(Console.ReadLine());
 					if(cpu.total<17) cpu.addCard(deck.hitCard());
 					isHit=
+						cpu.total==21 && 4<=deck.cards.Count
+						&& new Player($"{deck.cards[0]} {deck.cards[2]}").total==21?
+							true:
 						cpu.total<17 && 21<cpu.total+deck.cards[0]?
 							false:
 						0<deck.cards.Count?
