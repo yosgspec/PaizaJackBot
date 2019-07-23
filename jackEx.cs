@@ -6,17 +6,22 @@ using System.Linq;
 class Cards{
 	public List<int> cards;
 	public bool isBet;
+	public long chip;
 	int aceCount;
 
 	//コンストラクタ
-	public Cards(string cardStr){
+	public Cards(string cardLine){
+		var cardsStr=cardLine.Split(' ');
+		//BETターンであるかどうか
+		//一枚目のカードが"0"であるときはBETターン
+		isBet=cardsStr[0]=="0";
+		if(isBet){
+			chip=long.Parse(cardsStr[1]);
+			return;
+		}
 		//カードの束
 		//スペース区切りの文字列をint型のリストに変換する
-		cards=cardStr.Split(' ').Select(int.Parse).ToList();
-		//BETターンであるかどうか
-		//一枚目のカードが「0」であるときはBETターン
-		isBet=cards[0]==0;
-		if(isBet) return;
+		cards=cardsStr.Select(int.Parse).ToList();
 		//Aの数
 		aceCount=cards.Count(v=>v==1);
 	}
@@ -65,11 +70,11 @@ Lv | 名前                  | BET    | 倍率 | 連戦 | 特徴
 
 class Program{
 	//挑戦するレベル
-	const int level=8;
+	const int level=9;
 	//level=8の時、獲得チップを上乗せするコンボ上限
 	const int maxCombo=6;
 	//level=9の時のBET
-	const int finalBet=20000000;
+	const int finalBet=99990000;
 	//level毎のBET一覧
 	static readonly int[] betList={0,50,100,200,400,800,2000,2000,10000,finalBet};
 	//テスト時はBET=1とする
@@ -137,20 +142,29 @@ class Program{
 					var deck=new Cards(Console.ReadLine());
 					//ディーラーのカードが17未満の時、ディーラーはカードを引く
 					if(cpu.total<17) cpu.addCard(deck.hitCard());
-					/* 下記条件に従いカードを引く
-						* ディーラーの手札の合計が21(=負け確定)かつディーラーの次の初期手札の合計が21になる時、カードを引く
-						* ディーラーの合計が17未満の時、次のカードを引くとディーラーがバーストする時、カードは引かない
-						* デッキの残りが1枚以上残っており、カードを引いてもプレイヤーがバーストしない時、カードを引く
+					/* 下記条件に従いカードを引く(上である程優先度高
+							* 山札にカードが1枚以上残っており、
+							+ ディーラーの手札の合計が21(=負け確定)かつディーラーの次の初期手札の合計が21になる時、カードを引く
+							+ ディーラーの合計が17未満で次のカードを引くとディーラーがバーストする時、カードは引かない
+							+ ディーラーの合計が17未満で次の次のカードを引くとディーラーがバーストする時、カードを引く
+							+ プレイヤーの合計が21の時、カードは引かない
+							+ カードを引いてもプレイヤーがバーストしない時、カードを引く
 						* 山札にカードが残っていない時、基本判定条件でカードを引く */
-					isHit=
-						cpu.total==21 && 3<=deck.cards.Count
-						&& new Cards($"{deck.cards[0]} {deck.cards[2]}").total==21?
-							true:
-						cpu.total<17 && 21<cpu.total+deck.cards[0]?
-							false:
-						0<deck.cards.Count && pl.total+deck.cards[0]<=21?
-							true:
-							basicHit;
+					if(0<deck.cards.Count){
+						if(cpu.total==21
+						&& 3<=deck.cards.Count
+						&& new Cards($"{deck.cards[0]} {deck.cards[2]}").total==21)
+							isHit=true;
+						else if(cpu.total<17 && 21<cpu.total+deck.cards[0])
+							isHit=false;
+						else if(cpu.total<17 && 21<cpu.total+deck.cards[1] && pl.total+deck.cards[0]<=21)
+							isHit=true;
+						else if(pl.total==21)
+							isHit=false;
+						else
+							isHit=pl.total+deck.cards[0]<=21;
+					}
+					else isHit=basicHit;
 				}
 				catch{
 					//基本判定条件でカードを引く

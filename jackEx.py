@@ -1,14 +1,17 @@
 #カード管理クラス
 class Cards:
 	#コンストラクタ
-	def __init__(self,cardStr):
-		#カードの束
-		#スペース区切りの文字列をint型のリストに変換する
-		self.cards=list(map(int,cardStr.split(" ")))
+	def __init__(self,cardLine):
+		cardsStr=cardLine.split(" ")
 		#BETターンであるかどうか
 		#一枚目のカードが「0」であるときはBETターン
-		self.isBet=self.cards[0]==0
-		if self.isBet: return
+		self.isBet=cardsStr[0]=="0"
+		if self.isBet:
+			self.chip=int(cardsStr[1])
+			return
+		#カードの束
+		#スペース区切りの文字列をint型のリストに変換する
+		self.cards=list(map(int,cardsStr))
 		#Aの数
 		self.__aceCount=sum(1 for v in self.cards if v==10)
 
@@ -49,11 +52,11 @@ Lv | 名前                  | BET    | 倍率 | 連戦 | 特徴
 """
 
 #挑戦するレベル
-level=8
+level=9
 #level=8の時、獲得チップを上乗せするコンボ上限
 maxCombo=6
 #level=9の時のBET
-finalBet=20000000
+finalBet=99990000
 #level毎のBET一覧
 betList=[0,50,100,200,400,800,2000,2000,10000,finalBet]
 #テスト時はBET=1とする
@@ -115,17 +118,28 @@ def main():
 				deck=Cards(input())
 				#ディーラーのカードが17未満の時、ディーラーはカードを引く
 				if cpu.total<17: cpu.addCard(deck.hitCard())
-				""" 下記条件に従いカードを引く
-					* ディーラーの手札の合計が21(=負け確定)かつディーラーの次の初期手札の合計が21になる時、カードを引く
-					* ディーラーの合計が17未満の時、次のカードを引くとディーラーがバーストする時、カードは引かない
-					* デッキの残りが1枚以上残っており、カードを引いてもプレイヤーがバーストしない時、カードを引く
+				""" 下記条件に従いカードを引く(上である程優先度高
+					* 山札にカードが1枚以上残っており、
+						+ ディーラーの手札の合計が21(=負け確定)かつディーラーの次の初期手札の合計が21になる時、カードを引く
+						+ ディーラーの合計が17未満で次のカードを引くとディーラーがバーストする時、カードは引かない
+						+ ディーラーの合計が17未満で次の次のカードを引くとディーラーがバーストする時、カードを引く
+						+ プレイヤーの合計が21の時、カードは引かない
+						+ カードを引いてもプレイヤーがバーストしない時、カードを引く
 					* 山札にカードが残っていない時、基本判定条件でカードを引く """
-				isHit=(
-					True if cpu.total==21 and 3<=len(deck.cards)
-						and Cards(f"{deck.cards[0]} {deck.cards[2]}").total==21 else
-					False if cpu.total<17 and 21<cpu.total+deck.cards[0] else
-					True if 0<len(deck.cards) and pl.total+deck.cards[0]<=21 else
-					basicHit)
+				if(0<len(deck.cards)):
+					if(cpu.total==21
+					and 3<=len(deck.cards)
+					and Cards(f"{deck.cards[0]} {deck.cards[2]}").total==21):
+						isHit=True
+					elif cpu.total<17 and 21<cpu.total+deck.cards[0]:
+						isHit=False
+					elif cpu.total<17 and 21<cpu.total+deck.cards[1] and pl.total+deck.cards[0]<=21:
+						isHit=True
+					elif pl.total==21:
+						isHit=False
+					else:
+						isHit=pl.total+deck.cards[0]<=21
+				else: isHit=basicHit;
 			except:
 				#基本判定条件でカードを引く
 				isHit=(pl.total<=cpu.total and cpu.total<=22 

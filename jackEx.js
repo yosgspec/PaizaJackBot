@@ -8,14 +8,18 @@ const Cards=(()=>{
 
 return class Cards{
 	//コンストラクタ
-	constructor(cardStr){
+	constructor(cardLine){
+		var cardsStr=cardLine.split(/ /);
+		//BETターンであるかどうか
+		//一枚目のカードが"0"であるときはBETターン
+		this.isBet=cardsStr[0]=="0";
+		if(this.isBet){
+			this.chip=parseFloat(cardsStr[1]);
+			return;
+		}
 		//カードの束
 		//スペース区切りの文字列をint型のリストに変換する
-		this.cards=cardStr.split(/ /).map(v=>parseInt(v,10));
-		//BETターンであるかどうか
-		//一枚目のカードが「0」であるときはBETターン
-		this.isBet=this.cards[0]==0;
-		if(this.isBet) return;
+		this.cards=cardsStr.map(v=>parseInt(v,10));
 		//Aの数
 		this[aceCount]=this.cards.filter(v=>v==1).length;
 	}
@@ -61,11 +65,11 @@ Lv | 名前                  | BET    | 倍率 | 連戦 | 特徴
 */
 
 //挑戦するレベル
-const level=8;
+const level=9;
 //level=8の時、獲得チップを上乗せするコンボ上限
 const maxCombo=6;
 //level=9の時のBET
-const finalBet=20000000;
+const finalBet=99990000;
 //level毎のBET一覧
 const betList=[0,50,100,200,400,800,2000,2000,10000,finalBet];
 //テスト時はBET=1とする
@@ -96,7 +100,7 @@ const main=function*(res){
 		}
 		//BETを出力して終了
 		console.log(bet);
-		return;
+		return rl.close();
 	}
 
 	//【ゲームターン】
@@ -146,20 +150,29 @@ const main=function*(res){
 				let deck=new Cards(deckStr);
 				//ディーラーのカードが17未満の時、ディーラーはカードを引く
 				if(cpu.total<17) cpu.addCard(deck.hitCard());
-				/* 下記条件に従いカードを引く
-					* ディーラーの手札の合計が21(=負け確定)かつディーラーの次の初期手札の合計が21になる時、カードを引く
-					* ディーラーの合計が17未満の時、次のカードを引くとディーラーがバーストする時、カードは引かない
-					* デッキの残りが1枚以上残っており、カードを引いてもプレイヤーがバーストしない時、カードを引く
+				/* 下記条件に従いカードを引く(上である程優先度高
+					* 山札にカードが1枚以上残っており、
+						+ ディーラーの手札の合計が21(=負け確定)かつディーラーの次の初期手札の合計が21になる時、カードを引く
+						+ ディーラーの合計が17未満で次のカードを引くとディーラーがバーストする時、カードは引かない
+						+ ディーラーの合計が17未満で次の次のカードを引くとディーラーがバーストする時、カードを引く
+						+ プレイヤーの合計が21の時、カードは引かない
+						+ カードを引いてもプレイヤーがバーストしない時、カードを引く
 					* 山札にカードが残っていない時、基本判定条件でカードを引く */
-				isHit=
-					cpu.total==21 && 3<=deck.cards.length
-					&& new Cards(`${deck.cards[0]} ${deck.cards[2]}`).total==21?
-						true:
-					cpu.total<17 && 21<cpu.total+deck.cards[0]?
-						false:
-					0<deck.cards.length && pl.total+deck.cards[0]<=21?
-						true:
-						basicHit;
+				if(0<deck.cards.length){
+					if(cpu.total==21
+					&& 3<=deck.cards.length
+					&& new Cards(`${deck.cards[0]} ${deck.cards[2]}`).total==21)
+						isHit=true;
+					else if(cpu.total<17 && 21<cpu.total+deck.cards[0])
+						isHit=false;
+					else if(cpu.total<17 && 21<cpu.total+deck.cards[1] && pl.total+deck.cards[0]<=21)
+						isHit=true;
+					else if(pl.total==21)
+						isHit=false;
+					else
+						isHit=pl.total+deck.cards[0]<=21;
+				}
+				else isHit=basicHit;
 			}
 			else{
 				//基本判定条件でカードを引く
@@ -169,6 +182,6 @@ const main=function*(res){
 	}
 	//"HIT"または"STAND"を出力する
 	console.log(isHit?"HIT":"STAND");
-	process.exit();
+	rl.close();
 }(v=>main.next(v));
 main.next();
