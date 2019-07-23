@@ -1,17 +1,14 @@
 #カード管理クラス
 class Cards:
 	#コンストラクタ
-	def __init__(self,cardLine):
-		cardsStr=cardLine.split(" ")
-		#BETターンであるかどうか
-		#一枚目のカードが「0」であるときはBETターン
-		self.isBet=cardsStr[0]=="0"
-		if self.isBet:
-			self.chip=int(cardsStr[1])
-			return
+	def __init__(self,cardStr):
 		#カードの束
 		#スペース区切りの文字列をint型のリストに変換する
-		self.cards=list(map(int,cardsStr))
+		self.cards=list(map(int,cardStr.split(" ")))
+		#BETターンであるかどうか
+		#一枚目のカードが「0」であるときはBETターン
+		self.isBet=self.cards[0]==0
+		if self.isBet: return
 		#Aの数
 		self.__aceCount=sum(1 for v in self.cards if v==10)
 

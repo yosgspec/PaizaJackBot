@@ -6,22 +6,19 @@ using System.Linq;
 class Cards{
 	public List<int> cards;
 	public bool isBet;
-	public long chip;
 	int aceCount;
 
 	//コンストラクタ
-	public Cards(string cardLine){
-		var cardsStr=cardLine.Split(' ');
-		//BETターンであるかどうか
-		//一枚目のカードが"0"であるときはBETターン
-		isBet=cardsStr[0]=="0";
-		if(isBet){
-			chip=long.Parse(cardsStr[1]);
-			return;
-		}
+	public Cards(string cardStr){
 		//カードの束
 		//スペース区切りの文字列をint型のリストに変換する
-		cards=cardsStr.Select(int.Parse).ToList();
+		cards=cardStr.Split(' ').Select(v=>{
+			try{return int.Parse(v);}
+			catch{return int.MaxValue;}}).ToList();
+		//BETターンであるかどうか
+		//一枚目のカードが「0」であるときはBETターン
+		isBet=cards[0]==0;
+		if(isBet) return;
 		//Aの数
 		aceCount=cards.Count(v=>v==1);
 	}

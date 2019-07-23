@@ -8,18 +8,14 @@ const Cards=(()=>{
 
 return class Cards{
 	//コンストラクタ
-	constructor(cardLine){
-		var cardsStr=cardLine.split(/ /);
-		//BETターンであるかどうか
-		//一枚目のカードが"0"であるときはBETターン
-		this.isBet=cardsStr[0]=="0";
-		if(this.isBet){
-			this.chip=parseFloat(cardsStr[1]);
-			return;
-		}
+	constructor(cardStr){
 		//カードの束
 		//スペース区切りの文字列をint型のリストに変換する
-		this.cards=cardsStr.map(v=>parseInt(v,10));
+		this.cards=cardStr.split(/ /).map(v=>parseInt(v,10));
+		//BETターンであるかどうか
+		//一枚目のカードが「0」であるときはBETターン
+		this.isBet=this.cards[0]==0;
+		if(this.isBet) return;
 		//Aの数
 		this[aceCount]=this.cards.filter(v=>v==1).length;
 	}

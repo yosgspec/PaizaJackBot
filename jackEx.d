@@ -10,22 +10,19 @@ import std.algorithm.iteration;
 class Cards{
 	int[] cards;
 	bool isBet;
-	long chip;
 	private int aceCount;
 
 	//コンストラクタ
-	this(string cardLine){
-		auto cardsStr=cardLine.strip.split(" ");
-		//BETターンであるかどうか
-		//一枚目のカードが"0"であるときはBETターン
-		isBet=cardsStr[0]=="0";
-		if(isBet){
-			chip=to!long(cardsStr[1]);
-			return;
-		}
+	this(string cardStr){
 		//カードの束
 		//スペース区切りの文字列をint型のリストに変換する
-		cards=cardsStr.map!(to!int).array;
+		cards=cardStr.strip.split(" ").map!(delegate(v){
+			try{return to!int(v);}
+			catch{return int.max;}}).array;
+		//BETターンであるかどうか
+		//一枚目のカードが「0」であるときはBETターン
+		isBet=cards[0]==0;
+		if(isBet) return;
 		//Aの数
 		aceCount=cards.filter!(v=>v==1).array.length.to!int;
 	}
