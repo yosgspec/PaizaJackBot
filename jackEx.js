@@ -1,50 +1,28 @@
 "use strict";
 const rl=require("readline").createInterface(process.stdin);
 
-//カード管理クラス
-const Cards=(()=>{
-	//private
-	const aceCount=Symbol();
+/*
+【標準入力】
+-> BETステップ
+行 | Lv  | 入力
+---|-----|------------------------------
+ 1 | 0-9 | 0 [あなたの所持チップの枚数]
+ 2 | 2-9 | 現在何戦目かを示す数字
+ 3 | 2-9 | 現在何連勝かを示す数字
+ 4 | 8-9 | 前回の獲得コイン
 
-return class Cards{
-	//コンストラクタ
-	constructor(cardStr){
-		//カードの束
-		//スペース区切りの文字列をint型のリストに変換する
-		this.cards=cardStr.split(/ /).map(v=>parseInt(v,10));
-		//BETターンであるかどうか
-		//一枚目のカードが「0」であるときはBETターン
-		this.isBet=this.cards[0]==0;
-		if(this.isBet) return;
-		//Aの数
-		this[aceCount]=this.cards.filter(v=>v==1).length;
-	}
+-> ドローステップ
+行 | Lv  | 入力
+---|-----|------------------------------
+ 1 | 0-9 | あなたのカード数値群(1-10)
+ 2 | 2-9 | 現在何戦目かを示す数字
+ 3 | 2-9 | 現在何連勝かを示す数字
+ 4 | 3-9 | 最大BETチップ数
+ 5 | 3-9 | ディーラーのカード数値群(1-10)
+ 6 | 6-9 | 山札のカード数値群(1-10)※
+※山札に1枚もカードが残っていない時、入力が入らないので言語ごとにトラップする必要あり
 
-	//カードを1枚排出する
-	hitCard(){
-		return this.cards.shift();
-	}
-
-	//カードを1枚追加する
-	addCard(card){
-		this.cards.push(card);
-		if(card==1) this[aceCount]++;
-	}
-
-	//カードの合計を返す(21を超えなければAは11として算出)
-	get total(){
-		//カードの合計
-		var cardsSum=this.cards.reduce((a,b)=>a+b);
-		//Aの数分、10をカードの合計に加算し、21を超えなければ値を返す
-		for(let i=this[aceCount];0<i;i--){
-			let aceTotal=cardsSum+10*i;
-			if(aceTotal<=21) return aceTotal;
-		}
-		return cardsSum;
-	}
-};})();
-
-/* 【ディーラーリスト】
+【ディーラーリスト】
 Lv | 名前                  | BET    | 倍率 | 連戦 | 特徴
 ---|-----------------------|--------|------|------|----------------------------------------------------------------
  0 | 猫先生                |      0 |  0.0 |    1 | なし
@@ -85,7 +63,7 @@ const main=function*(res){
 		combo=parseInt(yield rl.once("line",res));
 	}
 
-	//【BETターン】
+	//【BETステップ】
 	if(pl.isBet){
 		//level=8の時は獲得チップを上乗せ
 		if(8==level){
@@ -99,7 +77,7 @@ const main=function*(res){
 		return rl.close();
 	}
 
-	//【ゲームターン】
+	//【ドローステップ】
 	//手札を引くかどうか
 	var isHit=false;
 	//level=0-2の時
@@ -145,7 +123,7 @@ const main=function*(res){
 				//山札
 				let deck=new Cards(deckStr);
 				//ディーラーのカードが17未満の時、ディーラーはカードを引く
-				if(cpu.total<17) cpu.addCard(deck.hitCard());
+				if(cpu.total<17) cpu.addCard(deck.drawCard());
 				/* 下記条件に従いカードを引く(上である程優先度高
 					* 山札にカードが1枚以上残っており、
 						+ ディーラーの手札の合計が21(=負け確定)かつディーラーの次の初期手札の合計が21になる時、カードを引く
@@ -180,4 +158,52 @@ const main=function*(res){
 	console.log(isHit?"HIT":"STAND");
 	rl.close();
 }(v=>main.next(v));
+
+//カード管理クラス
+const Cards=(()=>{
+	//private
+	const aceCount=Symbol();
+
+return class Cards{
+	//コンストラクタ
+	constructor(cardLine){
+		var cardsStr=cardLine.split(/ /);
+		//BETターンであるかどうか
+		//一枚目のカードが"0"であるときはBETターン
+		this.isBet=cardsStr[0]=="0";
+		if(this.isBet){
+			this.chip=parseFloat(cardsStr[1]);
+			return;
+		}
+		//カードの束
+		//スペース区切りの文字列をint型のリストに変換する
+		this.cards=cardsStr.map(v=>parseInt(v,10));
+		//Aの数
+		this[aceCount]=this.cards.filter(v=>v==1).length;
+	}
+
+	//カードを1枚排出する
+	drawCard(){
+		return this.cards.shift();
+	}
+
+	//カードを1枚追加する
+	addCard(card){
+		this.cards.push(card);
+		if(card==1) this[aceCount]++;
+	}
+
+	//カードの合計を返す(21を超えなければAは11として算出)
+	get total(){
+		//カードの合計
+		var cardsSum=this.cards.reduce((a,b)=>a+b);
+		//Aの数分、10をカードの合計に加算し、21を超えなければ値を返す
+		for(let i=this[aceCount];0<i;i--){
+			let aceTotal=cardsSum+10*i;
+			if(aceTotal<=21) return aceTotal;
+		}
+		return cardsSum;
+	}
+};})();
+
 main.next();

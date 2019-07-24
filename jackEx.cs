@@ -2,54 +2,28 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-//カード管理クラス
-class Cards{
-	public List<int> cards;
-	public bool isBet;
-	int aceCount;
+/*
+【標準入力】
+-> BETステップ
+行 | Lv  | 入力
+---|-----|------------------------------
+ 1 | 0-9 | 0 [あなたの所持チップの枚数]
+ 2 | 2-9 | 現在何戦目かを示す数字
+ 3 | 2-9 | 現在何連勝かを示す数字
+ 4 | 8-9 | 前回の獲得コイン
 
-	//コンストラクタ
-	public Cards(string cardStr){
-		//カードの束
-		//スペース区切りの文字列をint型のリストに変換する
-		cards=cardStr.Split(' ').Select(v=>{
-			try{return int.Parse(v);}
-			catch{return int.MaxValue;}}).ToList();
-		//BETターンであるかどうか
-		//一枚目のカードが「0」であるときはBETターン
-		isBet=cards[0]==0;
-		if(isBet) return;
-		//Aの数
-		aceCount=cards.Count(v=>v==1);
-	}
+-> ドローステップ
+行 | Lv  | 入力
+---|-----|------------------------------
+ 1 | 0-9 | あなたのカード数値群(1-10)
+ 2 | 2-9 | 現在何戦目かを示す数字
+ 3 | 2-9 | 現在何連勝かを示す数字
+ 4 | 3-9 | 最大BETチップ数
+ 5 | 3-9 | ディーラーのカード数値群(1-10)
+ 6 | 6-9 | 山札のカード数値群(1-10)※
+※山札に1枚もカードが残っていない時、入力が入らないので言語ごとにトラップする必要あり
 
-	//カードを1枚排出する
-	public int hitCard(){
-		var card=cards[0];
-		cards.RemoveAt(0);
-		return card;
-	}
-
-	//カードを1枚追加する
-	public void addCard(int card){
-		cards.Add(card);
-		if(card==1) aceCount++;
-	}
-
-	//カードの合計を返す(21を超えなければAは11として算出)
-	public int total{get{
-		//カードの合計
-		var cardsSum=cards.Sum();
-		//Aの数分、10をカードの合計に加算し、21を超えなければ値を返す
-		for(var i=aceCount;0<i;i--){
-			var aceTotal=cardsSum+10*i;
-			if(aceTotal<=21) return aceTotal;
-		}
-		return cardsSum;
-	}}
-}
-
-/* 【ディーラーリスト】
+【ディーラーリスト】
 Lv | 名前                  | BET    | 倍率 | 連戦 | 特徴
 ---|-----------------------|--------|------|------|--------------------------------------------------------------
  0 | 猫先生                |      0 |  0.0 |    1 | なし
@@ -91,7 +65,7 @@ class Program{
 			combo=int.Parse(Console.ReadLine());
 		}
 
-		//【BETターン】
+		//【BETステップ】
 		if(pl.isBet){
 			//level=8の時は獲得チップを上乗せ
 			if(8==level){
@@ -105,7 +79,7 @@ class Program{
 			return;
 		}
 
-		//【ゲームターン】
+		//【ドローステップ】
 		//手札を引くかどうか
 		bool isHit=false;
 		//level=0-2の時
@@ -138,7 +112,7 @@ class Program{
 					//山札
 					var deck=new Cards(Console.ReadLine());
 					//ディーラーのカードが17未満の時、ディーラーはカードを引く
-					if(cpu.total<17) cpu.addCard(deck.hitCard());
+					if(cpu.total<17) cpu.addCard(deck.drawCard());
 					/* 下記条件に従いカードを引く(上である程優先度高
 							* 山札にカードが1枚以上残っており、
 							+ ディーラーの手札の合計が21(=負け確定)かつディーラーの次の初期手札の合計が21になる時、カードを引く
@@ -172,4 +146,54 @@ class Program{
 		//"HIT"または"STAND"を出力する
 		Console.WriteLine(isHit?"HIT":"STAND");
 	}
+}
+
+//カード管理クラス
+class Cards{
+	public List<int> cards;
+	public bool isBet;
+	public long chip;
+	int aceCount;
+
+	//コンストラクタ
+	public Cards(string cardLine){
+		var cardsStr=cardLine.Split(' ');
+		//BETターンであるかどうか
+		//一枚目のカードが"0"であるときはBETターン
+		isBet=cardsStr[0]=="0";
+		if(isBet){
+			chip=long.Parse(cardsStr[1]);
+			return;
+		}
+		//カードの束
+		//スペース区切りの文字列をint型のリストに変換する
+		cards=cardsStr.Select(int.Parse).ToList();
+		//Aの数
+		aceCount=cards.Count(v=>v==1);
+	}
+
+	//カードを1枚排出する
+	public int drawCard(){
+		var card=cards[0];
+		cards.RemoveAt(0);
+		return card;
+	}
+
+	//カードを1枚追加する
+	public void addCard(int card){
+		cards.Add(card);
+		if(card==1) aceCount++;
+	}
+
+	//カードの合計を返す(21を超えなければAは11として算出)
+	public int total{get{
+		//カードの合計
+		var cardsSum=cards.Sum();
+		//Aの数分、10をカードの合計に加算し、21を超えなければ値を返す
+		for(var i=aceCount;0<i;i--){
+			var aceTotal=cardsSum+10*i;
+			if(aceTotal<=21) return aceTotal;
+		}
+		return cardsSum;
+	}}
 }

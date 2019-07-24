@@ -1,38 +1,25 @@
-#カード管理クラス
-class Cards:
-	#コンストラクタ
-	def __init__(self,cardStr):
-		#カードの束
-		#スペース区切りの文字列をint型のリストに変換する
-		self.cards=list(map(int,cardStr.split(" ")))
-		#BETターンであるかどうか
-		#一枚目のカードが「0」であるときはBETターン
-		self.isBet=self.cards[0]==0
-		if self.isBet: return
-		#Aの数
-		self.__aceCount=sum(1 for v in self.cards if v==10)
+"""
+【標準入力】
+-> BETステップ
+行 | Lv  | 入力
+---|-----|------------------------------
+ 1 | 0-9 | 0 [あなたの所持チップの枚数]
+ 2 | 2-9 | 現在何戦目かを示す数字
+ 3 | 2-9 | 現在何連勝かを示す数字
+ 4 | 8-9 | 前回の獲得コイン
 
-	#カードを1枚排出する
-	def hitCard(self):
-		return self.cards.pop(0)
+-> ドローステップ
+行 | Lv  | 入力
+---|-----|------------------------------
+ 1 | 0-9 | あなたのカード数値群(1-10)
+ 2 | 2-9 | 現在何戦目かを示す数字
+ 3 | 2-9 | 現在何連勝かを示す数字
+ 4 | 3-9 | 最大BETチップ数
+ 5 | 3-9 | ディーラーのカード数値群(1-10)
+ 6 | 6-9 | 山札のカード数値群(1-10)※
+※山札に1枚もカードが残っていない時、入力が入らないので言語ごとにトラップする必要あり
 
-	#カードを1枚追加する
-	def addCard(self,card):
-		self.cards.append(card)
-		if card==1: self.__aceCount+=1
-
-	#カードの合計を返す(21を超えなければAは11として算出)
-	@property
-	def total(self):
-		#カードの合計
-		cardsSum=sum(self.cards)
-		#Aの数分、10をカードの合計に加算し、21を超えなければ値を返す
-		for i in range(self.__aceCount,0,-1):
-			aceTotal=cardsSum+10*i
-			if aceTotal<=21: return aceTotal
-		return cardsSum
-
-"""【ディーラーリスト】
+【ディーラーリスト】
 Lv | 名前                  | BET    | 倍率 | 連戦 | 特徴
 ---|-----------------------|--------|------|------|----------------------------------------------------------------
  0 | 猫先生                |      0 |  0.0 |    1 | なし
@@ -71,7 +58,7 @@ def main():
 		#現在コンボ(連勝)数
 		combo=int(input())
 
-	#【BETターン】
+	#【BETステップ】
 	if pl.isBet:
 		#level=8の時は獲得チップを上乗せ
 		if 8==level:
@@ -83,7 +70,7 @@ def main():
 		print(bet)
 		return
 
-	#【ゲームターン】
+	#【ドローステップ】
 	#手札を引くかどうか
 	isHit=False
 	#level=0-2の時
@@ -114,7 +101,7 @@ def main():
 				#山札
 				deck=Cards(input())
 				#ディーラーのカードが17未満の時、ディーラーはカードを引く
-				if cpu.total<17: cpu.addCard(deck.hitCard())
+				if cpu.total<17: cpu.addCard(deck.drawCard())
 				""" 下記条件に従いカードを引く(上である程優先度高
 					* 山札にカードが1枚以上残っており、
 						+ ディーラーの手札の合計が21(=負け確定)かつディーラーの次の初期手札の合計が21になる時、カードを引く
@@ -144,5 +131,42 @@ def main():
 
 	#"HIT"または"STAND"を出力する
 	print("HIT" if isHit else "STAND")
+
+#カード管理クラス
+class Cards:
+	#コンストラクタ
+	def __init__(self,cardLine):
+		cardsStr=cardLine.split(" ")
+		#BETターンであるかどうか
+		#一枚目のカードが「0」であるときはBETターン
+		self.isBet=cardsStr[0]=="0"
+		if self.isBet:
+			self.chip=int(cardsStr[1])
+			return
+		#カードの束
+		#スペース区切りの文字列をint型のリストに変換する
+		self.cards=list(map(int,cardsStr))
+		#Aの数
+		self.__aceCount=sum(1 for v in self.cards if v==10)
+
+	#カードを1枚排出する
+	def drawCard(self):
+		return self.cards.pop(0)
+
+	#カードを1枚追加する
+	def addCard(self,card):
+		self.cards.append(card)
+		if card==1: self.__aceCount+=1
+
+	#カードの合計を返す(21を超えなければAは11として算出)
+	@property
+	def total(self):
+		#カードの合計
+		cardsSum=sum(self.cards)
+		#Aの数分、10をカードの合計に加算し、21を超えなければ値を返す
+		for i in range(self.__aceCount,0,-1):
+			aceTotal=cardsSum+10*i
+			if aceTotal<=21: return aceTotal
+		return cardsSum
 
 if __name__=="__main__": main()
